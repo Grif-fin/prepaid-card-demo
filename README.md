@@ -26,3 +26,6 @@ cd prepaid-card-demo
 ```
 
 You can access the web server on `http://localhost:9090/`.
+
+### How it looks like
+![Alt Text](resource/demo.gif)
