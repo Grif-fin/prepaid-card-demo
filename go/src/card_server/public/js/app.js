@@ -235,6 +235,10 @@ function onClickPurchase(cardsIndex){
 	var params = "cardId="+listOfCards[cardsIndex-1].card_id+"&amount="+pInputAmount.value+"&merchant="+pInputMerchant.value
 	httpRequest("POST", window.location.href + "purchase", params, function(response){
 		purchaseResp = JSON.parse(response)
+		if( purchaseResp["Card"] == null) {
+			alert("Failed to withdraw money. Insufficient funds!");
+			return
+		}
 		refreshCardContent(purchaseResp["Card"])
 		listOfTransactions.push(purchaseResp["Transaction"])
 		generateCardAnalytics(purchaseResp["Card"].card_id)
@@ -413,20 +417,28 @@ function generateTransactionTable() {
 	    cell2.innerHTML = transaction.CardId
 	    cell3.innerHTML = transaction.Amount
 	    // add input and edit button
-	    var inputCaptureAmount = document.createElement("input")
-	    inputCaptureAmount.id = "inputCaptureAmount-"+transaction.TransactionId
-		inputCaptureAmount.value = transaction.AmountToBeCaptured
-		inputCaptureAmount.type = "number"
-		inputCaptureAmount.style.minWidth = "100px"
-		inputCaptureAmount.min = 0
-		inputCaptureAmount.max = transaction.AmountToBeCaptured
-	    var editBtn = document.createElement("button");
-	    editBtn.id = "editBtn-"+transaction.TransactionId
-		editBtn.className = "w3-button w3-blue w3-round"
-		editBtn.innerHTML = "Save"
-		editBtn.onclick = function(){editOpenTransaction(this.id.split('-')[1])}
-	    cell4.appendChild(inputCaptureAmount)
-	    cell4.appendChild(editBtn)
+	    if(transaction.AmountToBeCaptured > 0){
+		    var inputCaptureAmount = document.createElement("input")
+		    inputCaptureAmount.id = "inputCaptureAmount-"+transaction.TransactionId
+			inputCaptureAmount.value = transaction.AmountToBeCaptured
+			inputCaptureAmount.type = "number"
+			inputCaptureAmount.style.minWidth = "100px"
+			inputCaptureAmount.min = 0
+			inputCaptureAmount.max = transaction.AmountToBeCaptured
+		    var editBtn = document.createElement("button");
+		    editBtn.id = "editBtn-"+transaction.TransactionId
+			editBtn.className = "w3-button w3-blue w3-round"
+			editBtn.innerHTML = "Save"
+			editBtn.onclick = function(){editOpenTransaction(this.id.split('-')[1])}
+		    cell4.appendChild(inputCaptureAmount)
+		    cell4.appendChild(editBtn)
+		} else {
+			if(transaction.IsRefunded){
+				cell4.innerHTML = "Transaction refunded"
+			} else {
+				cell4.innerHTML = "Transaction settled"
+			}
+		}
 
 	    cell5.innerHTML = new Date(transaction.Timestamp).toDateString();
    		cell6.innerHTML = (isRefunded ? "Yes" : "No")
@@ -438,6 +450,9 @@ function generateTransactionTable() {
 	    captureBtn.id = "captureBtn-"+transaction.TransactionId
 		captureBtn.className = "w3-button w3-green w3-round"
 		captureBtn.innerHTML = "Capture"
+		if(transaction.AmountToBeCaptured == 0 || transaction.IsRefunded){
+			captureBtn.disabled = true	
+		}
 		captureBtn.onclick = function(){captureAmount(this.id.split('-')[1])}
 
    		var buttonsGrpDiv2 = document.createElement("div")
@@ -446,6 +461,9 @@ function generateTransactionTable() {
 	    refundBtn.id = "refundBtn-"+transaction.TransactionId
 		refundBtn.className = "w3-button w3-orange w3-round"
 		refundBtn.innerHTML = "Refund"
+		if(transaction.AmountToBeCaptured > 0 || transaction.IsRefunded){
+			refundBtn.disabled = true
+		}
 		refundBtn.onclick = function(){refundAmount(this.id.split('-')[1])}
 
    		buttonsGrpDiv1.appendChild(captureBtn)
@@ -469,8 +487,21 @@ function refundAmount(transactionId){
 	httpRequest("POST", window.location.href + "refund", params, function(response){
 		bootstrap()
 	})
-	var refundBtn = document.getElementById("refundBtn-"+transactionId.TransactionId)
-	refundBtn.disabled = true
+	var refundBtn = document.getElementById("refundBtn-"+transactionId)
+	var transaction = findTransaction(transactionId)
+	if(transaction.AmountToBeCaptured > 0){
+		alert("Transaction needs to be captured before it is refunded!");
+		return
+	}
+}
+
+function findTransaction(transactionId){
+	for (var i = 0; i < listOfTransactions.length; i++) {
+		if(listOfTransactions[i].TransactionId == transactionId){
+			return listOfTransactions[i]
+		}
+	}
+	return null
 }
 
 function editOpenTransaction(transactionId){
