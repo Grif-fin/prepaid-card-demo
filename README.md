@@ -17,6 +17,9 @@ can no longer capture the full Amount (only the Amount that is still authorized)
 10. Web server to interact above functionalities with
 11. Analytics to show spending of the card user
 
+### How it looks like
+![Alt Text](resource/demo.gif)
+
 ### Run Go Server
 
 ```
@@ -27,5 +30,15 @@ cd prepaid-card-demo
 
 You can access the web server on `http://localhost:9090/`.
 
-### How it looks like
-![Alt Text](resource/demo.gif)
+### REST APIs
+| API | HTTP Method | Params | Example |
+| ------------- | ------------- | ------------- | ------------- |
+| createCard | POST | owner  | http://localhost:9090/createCard?owner=Mr%20Smith  |
+| addFunds | POST | cardId<br>amount  | http://localhost:9090/addFunds?cardId=98081&amount=100  |
+| authorizeAmount | GET | cardId<br>amount  | http://localhost:9090/authorizeAmount?cardId=98081&amount=100  |
+| purchase | POST | cardId<br>amount<br>merchant  | http://localhost:9090/purchase?cardId=98081&amount=20&merchant=Cafe%20Cool  |
+| editOpenTransaction | POST | transactionId<br>newAmount  | http://localhost:9090/editOpenTransaction?transactionId=27887&newAmount=15  |
+| captureAmount | POST | transactionId<br>amount  | http://localhost:9090/captureAmount?transactionId=27887&amount=15  |
+| refund | POST | transactionId  | http://localhost:9090/refund?transactionId=27887  |
+| getAllCards | GET | N/A  | http://localhost:9090/getAllCards  |
+| getTransactions | GET |  N/A | http://localhost:9090/getTransactions  |
